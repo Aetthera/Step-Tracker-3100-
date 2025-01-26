@@ -80,7 +80,25 @@ class HealthKitManager: ObservableObject {
     }
     
     func fetchAllData() {
-        
+        // a way to update the app in background, as well as globally
+        DispatchQueue.global(qos: .background).async {
+            print("////////////////////////////")
+            print("Attempting to fetch data...")
+            self.readStepCountToday()
+            self.readStepCountYesterday()
+            self.readCaloriesCountToday()
+            self.readStepCountThisWeek()
+            
+            print("Data Fetching Complete...")
+            print("\(self.stepCountToday) steps today")
+            print("\(self.caloriesBurnedToday) calories today")
+            print("////////////////////////////")
+            
+            // reference
+            // userdefault -> (k,v) ->store info in the app
+            UserDefaults(suiteName: "group.iWalker")?.set(self.stepCountToday, forKey: "widgetStep")
+            WidgetCenter.shared.reloadAllTimelines() // This will update the widget as well.
+        }
     }
     
     // reading today's step count

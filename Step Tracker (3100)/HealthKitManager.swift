@@ -46,6 +46,7 @@ class HealthKitManager: ObservableObject {
     // init
     init() {
         // request for permissions
+        requestAuthorization()
     }
     
     func requestAuthorization() {
@@ -68,6 +69,7 @@ class HealthKitManager: ObservableObject {
                     //fetching all data -> steps, calories ...
                     self.fetchAllData()
                     // setup a background observer
+                    self.startObservingHealthData()
                 } else {
                     print("\(String(describing:error))")
                 }
@@ -79,7 +81,43 @@ class HealthKitManager: ObservableObject {
         }
     }
     
+    // create observer function to listen to background updates
+    func startObservingHealthData() {
+        
+        // observe the step count
+        if let stepCountType = HKQuantityType.quantityType(forIdentifier: .stepCount) {
+            let stepObserverQuery = HKObserverQuery(sampleType: stepCountType, predicate: nil) { _, _, error in
+                if error != nil {
+                    print("Error observing step data: \(String(describing: error))")
+                    return
+                }
+                
+                //fetch the updated data
+                self.readStepCountToday()
+                self.readStepCountYesterday()
+                self.readStepCountThisWeek()
+            }
+            
+            healthStore.execute(stepObserverQuery)
+        }
+        
+        // observe the calories
+        if let calorieType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) {
+            let caloriesObserverQuery = HKObserverQuery(sampleType: calorieType, predicate: nil) { _, _, error in
+                if error != nil {
+                    print("Error observing calorie data: \(String(describing: error))")
+                    return
+                }
+                
+                //fetch the calories data
+                self.readCaloriesCountToday()
+            }
+            healthStore.execute(caloriesObserverQuery)
+        }
+    }
+    
     func fetchAllData() {
+        
         // a way to update the app in background, as well as globally
         DispatchQueue.global(qos: .background).async {
             print("////////////////////////////")
